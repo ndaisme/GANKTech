@@ -1,0 +1,17 @@
+# Set default behavior to automatic text/binary detection
+* text=auto
+
+# Explicitly declare scripts that must always have LF line endings
+*.sh text eol=lf
+gradlew text eol=lf
+
+# Explicitly declare files that are binary and must not be modified
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.keystore binary
+*.jks binary
