@@ -1,0 +1,6 @@
+{
+  "name": "GANK Teknisi",
+  "description": "Senjata utama teknisi HP untuk mengelola servis, pelanggan, sparepart, dan nota dengan gaya Neo-Brutalist.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
