@@ -28,6 +28,7 @@ fun defaultChecklist() = listOf(
 
 data class ServiceJob(
     val id: String = UUID.randomUUID().toString(),
+    val notaNumber: String = "",
     val customerName: String,
     val hpModel: String,
     val problem: String,
@@ -44,6 +45,7 @@ class GankViewModel : ViewModel() {
     private val _services = MutableStateFlow<List<ServiceJob>>(
         listOf(
             ServiceJob(
+                notaNumber = "GANK-2601",
                 customerName = "Budi Santoso",
                 hpModel = "iPhone 13 Pro",
                 problem = "Ganti LCD Ori",
@@ -67,6 +69,7 @@ class GankViewModel : ViewModel() {
                 checklistAfter = defaultChecklist() // All unchecked/not verified yet
             ),
             ServiceJob(
+                notaNumber = "GANK-2602",
                 customerName = "Siti Rahma",
                 hpModel = "Samsung S22 Ultra",
                 problem = "Ganti Baterai Kembung",
@@ -90,6 +93,7 @@ class GankViewModel : ViewModel() {
                 )
             ),
             ServiceJob(
+                notaNumber = "GANK-2603",
                 customerName = "Agus Prasetyo",
                 hpModel = "Redmi Note 10",
                 problem = "Bootloop Flash Ulang",
@@ -100,6 +104,7 @@ class GankViewModel : ViewModel() {
                 checklistAfter = defaultChecklist().map { it.copy(isChecked = true) } // All verified OK after flash
             ),
             ServiceJob(
+                notaNumber = "GANK-2604",
                 customerName = "Rian Hidayat",
                 hpModel = "ASUS ROG Phone 6",
                 problem = "Reballing Audio IC",
@@ -157,6 +162,7 @@ class GankViewModel : ViewModel() {
     val tempChecklistBefore: StateFlow<List<ChecklistItem>> = _tempChecklistBefore.asStateFlow()
 
     // Add Job Input Fields
+    val inputNotaNumber = MutableStateFlow("")
     val inputCustomerName = MutableStateFlow("")
     val inputHpModel = MutableStateFlow("")
     val inputProblem = MutableStateFlow("")
@@ -184,6 +190,7 @@ class GankViewModel : ViewModel() {
 
     fun openAddJobDialog() {
         // Reset fields
+        inputNotaNumber.value = ""
         inputCustomerName.value = ""
         inputHpModel.value = ""
         inputProblem.value = ""
@@ -250,9 +257,16 @@ class GankViewModel : ViewModel() {
         val prob = inputProblem.value.trim()
         val price = inputCost.value.toLongOrNull() ?: 0L
         val stat = inputStatus.value
+        val nota = inputNotaNumber.value.trim()
 
         if (name.isNotEmpty() && model.isNotEmpty() && prob.isNotEmpty()) {
+            val finalNota = if (nota.isEmpty()) {
+                "GANK-" + (1000..9999).random()
+            } else {
+                nota
+            }
             val newJob = ServiceJob(
+                notaNumber = finalNota,
                 customerName = name,
                 hpModel = model,
                 problem = prob,

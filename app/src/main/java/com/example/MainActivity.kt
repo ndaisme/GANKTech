@@ -98,7 +98,8 @@ fun GankTeknisiApp(
   val filteredServices = services.filter { job ->
     val matchesSearch = job.customerName.contains(searchQuery, ignoreCase = true) ||
                         job.hpModel.contains(searchQuery, ignoreCase = true) ||
-                        job.problem.contains(searchQuery, ignoreCase = true)
+                        job.problem.contains(searchQuery, ignoreCase = true) ||
+                        job.notaNumber.contains(searchQuery, ignoreCase = true)
     
     val matchesFilter = if (selectedFilter == "ALL") true else job.status == selectedFilter
     matchesSearch && matchesFilter
@@ -288,113 +289,243 @@ fun GankTeknisiApp(
                   shadowOffset = 5.dp,
                   borderWidth = 3.dp
                 ) {
-                  Column(modifier = Modifier.padding(6.dp)) {
+                  val waitingCount = services.count { it.status == "WAITING" || it.status == "DIAGNOSA" }
+                  val progressCount = services.count { it.status == "PENGERJAAN" }
+                  val qcCount = services.count { it.status == "QC" }
+                  val doneCount = services.count { it.status == "SELESAI" || it.status == "DIAMBIL" }
+                  val activeCount = waitingCount + progressCount + qcCount
+                  val completionPercent = if (totalJobs > 0) (doneCount * 100) / totalJobs else 0
+
+                  Column(modifier = Modifier.padding(4.dp)) {
                     Row(
                       verticalAlignment = Alignment.CenterVertically,
-                      horizontalArrangement = Arrangement.spacedBy(8.dp),
-                      modifier = Modifier.padding(bottom = 8.dp)
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      modifier = Modifier.padding(bottom = 10.dp)
                     ) {
-                      Icon(
-                        imageVector = Icons.Default.TrendingUp,
-                        contentDescription = null,
-                        tint = GankColors.GankYellow,
+                      Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                      ) {
+                        Icon(
+                          imageVector = Icons.Default.TrendingUp,
+                          contentDescription = null,
+                          tint = GankColors.GankYellow,
+                          modifier = Modifier
+                            .size(24.dp)
+                            .background(GankColors.Ink, RoundedCornerShape(4.dp))
+                            .border(1.5.dp, GankColors.Ink, RoundedCornerShape(4.dp))
+                            .padding(2.dp)
+                        )
+                        Text(
+                          text = "PERFORMA REPARASI GANK",
+                          fontWeight = FontWeight.Black,
+                          fontSize = 13.sp,
+                          color = GankColors.Ink,
+                          fontFamily = FontFamily.Monospace
+                        )
+                      }
+                      
+                      // Small status pill
+                      Box(
                         modifier = Modifier
-                          .size(24.dp)
-                          .background(GankColors.Ink, RoundedCornerShape(4.dp))
+                          .background(GankColors.Green, RoundedCornerShape(4.dp))
                           .border(1.5.dp, GankColors.Ink, RoundedCornerShape(4.dp))
-                          .padding(2.dp)
-                      )
-                      Text(
-                        text = "GRAFIK PERFORMA REPARASI",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp,
-                        color = GankColors.Ink,
-                        fontFamily = FontFamily.Monospace
-                      )
+                          .padding(horizontal = 6.dp, vertical = 2.dp)
+                      ) {
+                        Text(
+                          text = "LIVE STATS",
+                          fontWeight = FontWeight.Black,
+                          fontSize = 8.sp,
+                          color = GankColors.Ink,
+                          fontFamily = FontFamily.Monospace
+                        )
+                      }
+                    }
+
+                    // Dynamic Neo-Brutalist Performance Stats Row
+                    Row(
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp),
+                      horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                      // Pill 1: Completion Rate
+                      Box(
+                        modifier = Modifier
+                          .weight(1f)
+                          .background(GankColors.GankYellow, RoundedCornerShape(4.dp))
+                          .border(2.dp, GankColors.Ink, RoundedCornerShape(4.dp))
+                          .padding(vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Text(
+                          text = "$completionPercent% SELESAI",
+                          fontWeight = FontWeight.Black,
+                          fontSize = 10.sp,
+                          color = GankColors.Ink,
+                          fontFamily = FontFamily.Monospace
+                        )
+                      }
+
+                      // Pill 2: Active Backlog Count
+                      Box(
+                        modifier = Modifier
+                          .weight(1f)
+                          .background(GankColors.White, RoundedCornerShape(4.dp))
+                          .border(2.dp, GankColors.Ink, RoundedCornerShape(4.dp))
+                          .padding(vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Text(
+                          text = "$activeCount AKTIF REPAIR",
+                          fontWeight = FontWeight.Black,
+                          fontSize = 10.sp,
+                          color = GankColors.Ink,
+                          fontFamily = FontFamily.Monospace
+                        )
+                      }
+                    }
+
+                    // Descriptive Indonesian performance text
+                    val performanceSummary = when {
+                      completionPercent >= 75 -> "Performa luar biasa! Mayoritas unit servis telah sukses diselesaikan."
+                      completionPercent >= 50 -> "Aktivitas bengkel stabil. Pertahankan kecepatan pengerjaan unit."
+                      activeCount > 3 -> "Beban kerja menumpuk! Prioritaskan unit berstatus WAITING & PROSES."
+                      else -> "Arus servis terpantau lancar. Siap menerima unit reparasi baru."
                     }
 
                     Text(
-                      text = "Distribusi status pengerjaan unit HP secara real-time:",
+                      text = performanceSummary,
                       fontSize = 11.sp,
                       fontWeight = FontWeight.Bold,
                       color = GankColors.Steel,
                       modifier = Modifier.padding(bottom = 12.dp)
                     )
 
-                    val waitingCount = services.count { it.status == "WAITING" || it.status == "DIAGNOSA" }
-                    val progressCount = services.count { it.status == "PENGERJAAN" }
-                    val qcCount = services.count { it.status == "QC" }
-                    val doneCount = services.count { it.status == "SELESAI" || it.status == "DIAMBIL" }
-
                     val maxVal = maxOf(1, waitingCount, progressCount, qcCount, doneCount)
+                    val midVal = maxVal / 2
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                       Row(
                         modifier = Modifier
                           .fillMaxWidth()
-                          .height(110.dp)
-                          .padding(horizontal = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.Bottom
+                          .height(150.dp)
+                          .background(GankColors.Paper, RoundedCornerShape(8.dp))
+                          .border(2.5.dp, GankColors.Ink, RoundedCornerShape(8.dp))
+                          .padding(8.dp)
                       ) {
-                        val barData = listOf(
-                          Triple("WAITING", waitingCount, GankColors.Blue),
-                          Triple("PROSES", progressCount, GankColors.Silver),
-                          Triple("QC CHECK", qcCount, GankColors.GankYellow),
-                          Triple("SELESAI", doneCount, GankColors.Green)
-                        )
+                        // Y-Axis Labels Column
+                        Column(
+                          modifier = Modifier
+                            .fillMaxHeight()
+                            .width(28.dp)
+                            .padding(end = 4.dp),
+                          verticalArrangement = Arrangement.SpaceBetween,
+                          horizontalAlignment = Alignment.End
+                        ) {
+                          Text(text = maxVal.toString(), fontWeight = FontWeight.Black, fontSize = 9.sp, color = GankColors.Ink, fontFamily = FontFamily.Monospace)
+                          Text(text = if (midVal > 0 && midVal < maxVal) midVal.toString() else "", fontWeight = FontWeight.Black, fontSize = 9.sp, color = GankColors.Steel, fontFamily = FontFamily.Monospace)
+                          Text(text = "0", fontWeight = FontWeight.Black, fontSize = 9.sp, color = GankColors.Ink, fontFamily = FontFamily.Monospace)
+                        }
 
-                        barData.forEach { (label, count, color) ->
-                          val barHeightFraction = count.toFloat() / maxVal
-                          val animHeight = (barHeightFraction * 70).coerceAtLeast(6f).dp
-
+                        // Chart Plotting Area with Gridlines
+                        Box(
+                          modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                        ) {
+                          // Horizontal Gridlines (Back layer)
                           Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Bottom,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.SpaceBetween
                           ) {
-                            // Count Label
-                            Text(
-                              text = count.toString(),
-                              fontWeight = FontWeight.Black,
-                              fontSize = 11.sp,
-                              color = GankColors.Ink,
-                              modifier = Modifier.padding(bottom = 2.dp)
+                            // Bottom Base line
+                            Box(modifier = Modifier.fillMaxWidth().weight(1f))
+                            Box(modifier = Modifier.fillMaxWidth().height(2.5.dp).background(GankColors.Ink))
+                          }
+
+                          // Bars (Front layer)
+                          Row(
+                            modifier = Modifier
+                              .fillMaxSize()
+                              .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Bottom
+                          ) {
+                            val barData = listOf(
+                              Triple("WAITING", waitingCount, GankColors.Blue),
+                              Triple("PROSES", progressCount, GankColors.Silver),
+                              Triple("QC CHECK", qcCount, GankColors.GankYellow),
+                              Triple("SELESAI", doneCount, GankColors.Green)
                             )
 
-                            // Dynamic Neo-Brutalist Bar
-                            Box(
-                              modifier = Modifier
-                                .width(32.dp)
-                                .height(animHeight)
-                                .background(color, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .border(2.dp, GankColors.Ink, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            )
+                            barData.forEach { (label, count, color) ->
+                              val barHeightFraction = count.toFloat() / maxVal
+                              // Give bars some visual height range within the bounding box
+                              val barHeight = (barHeightFraction * 80).coerceAtLeast(6f).dp
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                              Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Bottom,
+                                modifier = Modifier
+                                  .weight(1f)
+                                  .fillMaxHeight()
+                              ) {
+                                // Count Badge/Bubble
+                                Box(
+                                  modifier = Modifier
+                                    .background(GankColors.Ink, RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 5.dp, vertical = 2.dp)
+                                ) {
+                                  Text(
+                                    text = count.toString(),
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 9.sp,
+                                    color = GankColors.White,
+                                    fontFamily = FontFamily.Monospace
+                                  )
+                                }
 
-                            // Label
-                            Text(
-                              text = label,
-                              fontWeight = FontWeight.Black,
-                              fontSize = 9.sp,
-                              color = GankColors.Ink,
-                              fontFamily = FontFamily.Monospace,
-                              maxLines = 1
-                            )
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                // Dynamic Neo-Brutalist Bar Container with offset shadow
+                                Box(
+                                  modifier = Modifier
+                                    .width(28.dp)
+                                    .height(barHeight)
+                                ) {
+                                  // Hard Shadow
+                                  Box(
+                                    modifier = Modifier
+                                      .fillMaxSize()
+                                      .offset(x = 2.5.dp, y = 2.5.dp)
+                                      .background(GankColors.Ink, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                  )
+                                  // Front Bar
+                                  Box(
+                                    modifier = Modifier
+                                      .fillMaxSize()
+                                      .background(color, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                      .border(2.dp, GankColors.Ink, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                  )
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                // Label
+                                Text(
+                                  text = label,
+                                  fontWeight = FontWeight.Black,
+                                  fontSize = 8.sp,
+                                  color = GankColors.Ink,
+                                  fontFamily = FontFamily.Monospace,
+                                  maxLines = 1
+                                )
+                              }
+                            }
                           }
                         }
                       }
-
-                      Spacer(modifier = Modifier.height(2.dp))
-
-                      // Solid Base Line (X-Axis)
-                      Box(
-                        modifier = Modifier
-                          .fillMaxWidth()
-                          .height(2.dp)
-                          .background(GankColors.Ink)
-                      )
                     }
                   }
                 }
@@ -951,13 +1082,32 @@ fun ServiceJobRow(
           verticalAlignment = Alignment.Top
         ) {
           Column {
-            Text(
-              text = job.hpModel.uppercase(),
-              fontWeight = FontWeight.Black,
-              fontSize = 18.sp,
-              color = GankColors.Ink,
-              fontFamily = FontFamily.Monospace
-            )
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+              Text(
+                text = job.hpModel.uppercase(),
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                color = GankColors.Ink,
+                fontFamily = FontFamily.Monospace
+              )
+              // No Nota Badge
+              Box(
+                modifier = Modifier
+                  .background(GankColors.Ink, RoundedCornerShape(4.dp))
+                  .padding(horizontal = 6.dp, vertical = 2.dp)
+              ) {
+                Text(
+                  text = job.notaNumber,
+                  fontWeight = FontWeight.Black,
+                  fontSize = 9.sp,
+                  color = GankColors.GankYellow,
+                  fontFamily = FontFamily.Monospace
+                )
+              }
+            }
             Text(
               text = "Pelanggan: ${job.customerName}",
               fontWeight = FontWeight.Bold,
@@ -1167,6 +1317,7 @@ fun AddServiceJobDialog(
   onDismiss: () -> Unit,
   onSave: () -> Unit
 ) {
+  val notaNumber by viewModel.inputNotaNumber.collectAsState()
   val custName by viewModel.inputCustomerName.collectAsState()
   val hpModel by viewModel.inputHpModel.collectAsState()
   val problem by viewModel.inputProblem.collectAsState()
@@ -1196,6 +1347,13 @@ fun AddServiceJobDialog(
           color = GankColors.Ink,
           modifier = Modifier.padding(bottom = 16.dp),
           fontFamily = FontFamily.Monospace
+        )
+
+        NeoBrutalistTextField(
+          value = notaNumber,
+          onValueChange = { viewModel.inputNotaNumber.value = it },
+          label = "No Nota Manual (Kosongkan untuk Otomatis)",
+          modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
         )
 
         NeoBrutalistTextField(
