@@ -79,6 +79,11 @@ fun NeoBrutalistButton(
 
     val currentBg = if (enabled) containerColor else GankColors.Silver
     val borderCol = GankColors.Ink
+    val contentCol = if (currentBg == GankColors.GankYellow || currentBg == GankColors.Blue || currentBg == GankColors.Green) {
+        Color(0xFF0A0A0A)
+    } else {
+        GankColors.Ink
+    }
 
     Box(modifier = modifier.height(IntrinsicSize.Min)) {
         // Background black shadow box
@@ -111,7 +116,7 @@ fun NeoBrutalistButton(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = GankColors.Ink,
+                        tint = contentCol,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -119,7 +124,7 @@ fun NeoBrutalistButton(
                 Text(
                     text = text,
                     fontWeight = FontWeight.Black,
-                    color = GankColors.Ink,
+                    color = contentCol,
                     fontSize = 15.sp,
                     letterSpacing = 0.5.sp
                 )

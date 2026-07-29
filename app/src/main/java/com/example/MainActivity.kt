@@ -46,14 +46,18 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme {
+      val viewModel: GankViewModel = viewModel()
+      val isDark by viewModel.isDarkMode.collectAsState()
+
+      MyApplicationTheme(darkTheme = isDark) {
         Scaffold(
           modifier = Modifier.fillMaxSize(),
           contentWindowInsets = WindowInsets.safeDrawing,
           containerColor = GankColors.Paper
         ) { innerPadding ->
           GankTeknisiApp(
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            viewModel = viewModel
           )
         }
       }
@@ -75,6 +79,7 @@ fun GankTeknisiApp(
   val services by viewModel.services.collectAsState()
   val searchQuery by viewModel.searchQuery.collectAsState()
   val selectedFilter by viewModel.selectedStatusFilter.collectAsState()
+  val isDark by viewModel.isDarkMode.collectAsState()
   
   val isAddDialogOpen by viewModel.isAddJobDialogOpen.collectAsState()
   val isChecklistDialogOpen by viewModel.isChecklistDialogOpen.collectAsState()
@@ -810,6 +815,81 @@ fun GankTeknisiApp(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
             ) {
+              // THEME SETTINGS CARD
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(bottom = 16.dp)
+              ) {
+                NeoBrutalistCard(
+                  backgroundColor = GankColors.White,
+                  shadowOffset = 5.dp,
+                  borderWidth = 3.dp
+                ) {
+                  Column(modifier = Modifier.padding(4.dp)) {
+                    Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                      modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = GankColors.Ink,
+                        modifier = Modifier.size(18.dp)
+                      )
+                      Text(
+                        text = "TEMA & PREFERENSI TAMPILAN",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp,
+                        color = GankColors.Ink,
+                        fontFamily = FontFamily.Monospace
+                      )
+                    }
+                    Text(
+                      text = "Atur mode kontras tinggi Neo-Brutalist untuk kenyamanan pengerjaan reparasi saat siang atau malam hari.",
+                      fontWeight = FontWeight.Bold,
+                      fontSize = 11.sp,
+                      color = GankColors.Steel,
+                      modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    Divider(color = GankColors.Ink, modifier = Modifier.padding(bottom = 12.dp))
+                    
+                    Row(
+                      modifier = Modifier.fillMaxWidth(),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalAlignment = Alignment.CenterVertically
+                    ) {
+                      Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                      ) {
+                        Box(
+                          modifier = Modifier
+                            .background(if (isDark) GankColors.Ink else GankColors.GankYellow, RoundedCornerShape(4.dp))
+                            .border(2.dp, GankColors.Ink, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                          Text(
+                            text = if (isDark) "DARK MODE" else "LIGHT MODE",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 10.sp,
+                            color = if (isDark) GankColors.Paper else GankColors.Ink,
+                            fontFamily = FontFamily.Monospace
+                          )
+                        }
+                      }
+
+                      NeoBrutalistButton(
+                        text = if (isDark) "AKTIFKAN LIGHT" else "AKTIFKAN DARK",
+                        onClick = { viewModel.toggleTheme() },
+                        containerColor = GankColors.GankYellow
+                      )
+                    }
+                  }
+                }
+              }
+
               // PENGATURAN BRAND CARD
               Box(
                 modifier = Modifier

@@ -139,6 +139,14 @@ class GankViewModel : ViewModel() {
     private val _selectedStatusFilter = MutableStateFlow("ALL")
     val selectedStatusFilter = _selectedStatusFilter.asStateFlow()
 
+    // Theme toggle state (false = Light mode, true = Dark mode)
+    private val _isDarkMode = MutableStateFlow(false)
+    val isDarkMode = _isDarkMode.asStateFlow()
+
+    fun toggleTheme() {
+        _isDarkMode.value = !_isDarkMode.value
+    }
+
     // Standalone Diagnostic Hardware Checklist state (global quick tool)
     private val _checklist = MutableStateFlow(defaultChecklist())
     val checklist: StateFlow<List<ChecklistItem>> = _checklist.asStateFlow()
