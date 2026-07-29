@@ -83,6 +83,10 @@ fun GankTeknisiApp(
   val activeJobChecklistIsBefore by viewModel.activeJobChecklistIsBefore.collectAsState()
 
   var currentTab by remember { mutableStateOf(GankTab.DASHBOARD) }
+  var detailPage by remember { mutableStateOf(1) }
+  LaunchedEffect(searchQuery, selectedFilter) {
+    detailPage = 1
+  }
 
   // Derived statistics
   val totalJobs = services.size
@@ -273,6 +277,129 @@ fun GankTeknisiApp(
                 )
               }
 
+              // GRAFIK PERFORMA REPARASI (NEO-BRUTALIST BAR CHART)
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(bottom = 16.dp)
+              ) {
+                NeoBrutalistCard(
+                  backgroundColor = GankColors.White,
+                  shadowOffset = 5.dp,
+                  borderWidth = 3.dp
+                ) {
+                  Column(modifier = Modifier.padding(6.dp)) {
+                    Row(
+                      verticalAlignment = Alignment.CenterVertically,
+                      horizontalArrangement = Arrangement.spacedBy(8.dp),
+                      modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                      Icon(
+                        imageVector = Icons.Default.TrendingUp,
+                        contentDescription = null,
+                        tint = GankColors.GankYellow,
+                        modifier = Modifier
+                          .size(24.dp)
+                          .background(GankColors.Ink, RoundedCornerShape(4.dp))
+                          .border(1.5.dp, GankColors.Ink, RoundedCornerShape(4.dp))
+                          .padding(2.dp)
+                      )
+                      Text(
+                        text = "GRAFIK PERFORMA REPARASI",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp,
+                        color = GankColors.Ink,
+                        fontFamily = FontFamily.Monospace
+                      )
+                    }
+
+                    Text(
+                      text = "Distribusi status pengerjaan unit HP secara real-time:",
+                      fontSize = 11.sp,
+                      fontWeight = FontWeight.Bold,
+                      color = GankColors.Steel,
+                      modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    val waitingCount = services.count { it.status == "WAITING" || it.status == "DIAGNOSA" }
+                    val progressCount = services.count { it.status == "PENGERJAAN" }
+                    val qcCount = services.count { it.status == "QC" }
+                    val doneCount = services.count { it.status == "SELESAI" || it.status == "DIAMBIL" }
+
+                    val maxVal = maxOf(1, waitingCount, progressCount, qcCount, doneCount)
+
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                      Row(
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .height(110.dp)
+                          .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.Bottom
+                      ) {
+                        val barData = listOf(
+                          Triple("WAITING", waitingCount, GankColors.Blue),
+                          Triple("PROSES", progressCount, GankColors.Silver),
+                          Triple("QC CHECK", qcCount, GankColors.GankYellow),
+                          Triple("SELESAI", doneCount, GankColors.Green)
+                        )
+
+                        barData.forEach { (label, count, color) ->
+                          val barHeightFraction = count.toFloat() / maxVal
+                          val animHeight = (barHeightFraction * 70).coerceAtLeast(6f).dp
+
+                          Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Bottom,
+                            modifier = Modifier.weight(1f)
+                          ) {
+                            // Count Label
+                            Text(
+                              text = count.toString(),
+                              fontWeight = FontWeight.Black,
+                              fontSize = 11.sp,
+                              color = GankColors.Ink,
+                              modifier = Modifier.padding(bottom = 2.dp)
+                            )
+
+                            // Dynamic Neo-Brutalist Bar
+                            Box(
+                              modifier = Modifier
+                                .width(32.dp)
+                                .height(animHeight)
+                                .background(color, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .border(2.dp, GankColors.Ink, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Label
+                            Text(
+                              text = label,
+                              fontWeight = FontWeight.Black,
+                              fontSize = 9.sp,
+                              color = GankColors.Ink,
+                              fontFamily = FontFamily.Monospace,
+                              maxLines = 1
+                            )
+                          }
+                        }
+                      }
+
+                      Spacer(modifier = Modifier.height(2.dp))
+
+                      // Solid Base Line (X-Axis)
+                      Box(
+                        modifier = Modifier
+                          .fillMaxWidth()
+                          .height(2.dp)
+                          .background(GankColors.Ink)
+                      )
+                    }
+                  }
+                }
+              }
+
               // WORKSHOP BULLETIN & QUICK GUIDE
               Box(
                 modifier = Modifier
@@ -457,21 +584,89 @@ fun GankTeknisiApp(
                   }
                 }
               } else {
-                // REPAIR JOBS LAZYCOLUMN
-                LazyColumn(
+                val itemsPerPage = 2
+                val totalPages = maxOf(1, kotlin.math.ceil(filteredServices.size.toDouble() / itemsPerPage).toInt())
+                val currentPageSafe = minOf(detailPage, totalPages).coerceAtLeast(1)
+                val paginatedServices = filteredServices.chunked(itemsPerPage).getOrNull(currentPageSafe - 1) ?: emptyList()
+
+                Column(
                   modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                  verticalArrangement = Arrangement.spacedBy(16.dp),
-                  contentPadding = PaddingValues(bottom = 24.dp)
+                    .weight(1f)
                 ) {
-                  items(filteredServices, key = { it.id }) { job ->
-                    ServiceJobRow(
-                      job = job,
-                      onUpdateStatus = { id, stat -> viewModel.updateJobStatus(id, stat) },
-                      onDelete = { id -> viewModel.deleteJob(id) },
-                      onOpenChecklist = { id, isBefore -> viewModel.openJobChecklistEditor(id, isBefore) }
-                    )
+                  // REPAIR JOBS LAZYCOLUMN
+                  LazyColumn(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 8.dp)
+                  ) {
+                    items(paginatedServices, key = { it.id }) { job ->
+                      ServiceJobRow(
+                        job = job,
+                        onUpdateStatus = { id, stat -> viewModel.updateJobStatus(id, stat) },
+                        onDelete = { id -> viewModel.deleteJob(id) },
+                        onOpenChecklist = { id, isBefore -> viewModel.openJobChecklistEditor(id, isBefore) }
+                      )
+                    }
+                  }
+
+                  // PAGINATION CONTROLLER BAR (1/NEXT STYLE)
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(top = 8.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                  ) {
+                    // PREV BUTTON
+                    Box(
+                      modifier = Modifier
+                        .background(if (currentPageSafe > 1) GankColors.White else GankColors.Paper, RoundedCornerShape(6.dp))
+                        .border(2.dp, GankColors.Ink, RoundedCornerShape(6.dp))
+                        .clickable(enabled = currentPageSafe > 1) { detailPage = currentPageSafe - 1 }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                      Text(
+                        text = "PREV",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp,
+                        color = if (currentPageSafe > 1) GankColors.Ink else GankColors.Steel
+                      )
+                    }
+
+                    // PAGE INDICATOR
+                    Box(
+                      modifier = Modifier
+                        .background(GankColors.GankYellow, RoundedCornerShape(6.dp))
+                        .border(2.dp, GankColors.Ink, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                      Text(
+                        text = "PAGE $currentPageSafe OF $totalPages",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = GankColors.Ink
+                      )
+                    }
+
+                    // NEXT BUTTON
+                    Box(
+                      modifier = Modifier
+                        .background(if (currentPageSafe < totalPages) GankColors.White else GankColors.Paper, RoundedCornerShape(6.dp))
+                        .border(2.dp, GankColors.Ink, RoundedCornerShape(6.dp))
+                        .clickable(enabled = currentPageSafe < totalPages) { detailPage = currentPageSafe + 1 }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                      Text(
+                        text = "NEXT",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp,
+                        color = if (currentPageSafe < totalPages) GankColors.Ink else GankColors.Steel
+                      )
+                    }
                   }
                 }
               }
